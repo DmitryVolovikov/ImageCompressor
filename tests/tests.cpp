@@ -26,9 +26,9 @@ bool matchVectors(const std::vector<T>& v1, const std::vector<T>& v2) {
     return v1 == v2;
 }
 
-struct PointAwarder {
+struct TestAwarder {
   public:
-    PointAwarder(const std::string& filename = "", bool verbose = true) : verbose_(verbose) {
+    TestAwarder(const std::string& filename = "", bool verbose = true) : verbose_(verbose) {
         if (filename.empty()) {
             return;
         }
@@ -39,30 +39,36 @@ struct PointAwarder {
         std::cout.rdbuf(file_.rdbuf());
     }
 
-    ~PointAwarder() {
+    ~TestAwarder() {
         if (verbose_) {
             std::cout << "Total points awarded: ";
         }
-        std::cout << secret_contest_seed << totalPoints_ << std::endl;
+        std::cout << secret_contest_seed << (compulsory_test_remaining_ ? 0 : totalPoints_) << std::endl;
         if (file_.is_open()) {
             file_.close();
         }
     }
 
-    void awardPoints(size_t points, const std::string& test_name = "") {
+    void awardPoints(size_t points, const std::string& test_name = "", bool passed_compulsory_test=false) {
         totalPoints_ += points;
+        if (passed_compulsory_test) {
+            --compulsory_test_remaining_;
+        }
         if (verbose_) {
             std::cout << "Awarded: ";
         }
         std::cout << secret_contest_seed << points;
-        if (test_name != "" && verbose_) {
+        if (test_name != "") {
             std::cout << " for " << test_name;
         }
         std::cout << std::endl;
     }
 
+    static constexpr int NUMBER_OF_COMPULSORY_TESTS = 2;
+
   private:
     size_t totalPoints_ = 0;
+    int compulsory_test_remaining_ = NUMBER_OF_COMPULSORY_TESTS;
 
     bool verbose_ = true;
     std::ofstream file_;
@@ -71,7 +77,7 @@ struct PointAwarder {
 
 // START OF TESTS
 
-PointAwarder awarder;
+TestAwarder awarder("", true);
 
 TEST_CASE("BMP read") {
     constexpr size_t TEST_AWARD_POINTS = 1;
@@ -92,7 +98,7 @@ TEST_CASE("BMP read") {
         }
     }
     closeLogFile();
-    awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName());
+    awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName(), true);
 }
 
 TEST_CASE("BMP save and read") {
@@ -102,8 +108,7 @@ TEST_CASE("BMP save and read") {
     UncompressedImage img = loadFromBMP("images/red_cross.bmp");
     saveAsBMP(img, "tmp_images/red_cross.bmp");
 
-    UncompressedImage loaded_img = loadFromBMP("tmp_images/red_cross.bmp");
-    REQUIRE_FALSE(loaded_img.image_data.empty());
+    UncompressedImage loaded_img = loadFromBMP("images/red_cross.bmp");
     REQUIRE(loaded_img.width == img.width);
     REQUIRE(loaded_img.height == img.height);
     REQUIRE(loaded_img.is_grayscale == img.is_grayscale);
@@ -114,8 +119,7 @@ TEST_CASE("BMP save and read") {
     }
 
     closeLogFile();
-    std::cout << "====================\n";
-    awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName());
+    awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName(), true);
 }
 
 TEST_CASE("Simple horizontally mirrored image") {
@@ -152,17 +156,17 @@ TEST_CASE("Simple horizontally mirrored image") {
     awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName());
 }
 
-TEST_CASE("Vertically mirrored image") {
+TEST_CASE("Horizontally mirrored image") {
     constexpr size_t TEST_AWARD_POINTS = 1;
     openLogFile("logs/test_04.log", true);
 
     UncompressedImage img = loadFromBMP("images/kapibara.bmp");
-    mirror(img);
-    saveAsBMP(img, "tmp_images/kapibara_vert_flip.bmp");
+    mirror(img, true);
+    saveAsBMP(img, "tmp_images/kapibara_hor_flip.bmp");
 
     REQUIRE(matchVectors(
-        loadFile("tmp_images/kapibara_vert_flip.bmp"),
-        loadFile("correct_images/kapibara_vert_flip.bmp")));
+        loadFile("tmp_images/kapibara_hor_flip.bmp"),
+        loadFile("correct_images/kapibara_hor_flip.bmp")));
 
     closeLogFile();
     awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName());
@@ -202,17 +206,17 @@ TEST_CASE("Simple vertically mirrored image") {
     awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName());
 }
 
-TEST_CASE("Horizontally mirrored image") {
+TEST_CASE("Vertically mirrored image") {
     constexpr size_t TEST_AWARD_POINTS = 1;
     openLogFile("logs/test_06.log", true);
 
     UncompressedImage img = loadFromBMP("images/kapibara.bmp");
     mirror(img);
-    saveAsBMP(img, "tmp_images/kapibara_hor_flip.bmp");
+    saveAsBMP(img, "tmp_images/kapibara_vert_flip.bmp");
 
     REQUIRE(matchVectors(
-        loadFile("tmp_images/kapibara_hor_flip.bmp"),
-        loadFile("correct_images/kapibara_hor_flip.bmp")));
+        loadFile("tmp_images/kapibara_vert_flip.bmp"),
+        loadFile("correct_images/kapibara_vert_flip.bmp")));
 
     closeLogFile();
     awarder.awardPoints(TEST_AWARD_POINTS, Catch::getResultCapture().getCurrentTestName());

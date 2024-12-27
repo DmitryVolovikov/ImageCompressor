@@ -22,6 +22,8 @@ all: build
 # Build target
 build: $(TARGET)
 
+build_all: $(TARGET) $(TEST_TARGET)
+
 # Link the object files to create the executable
 $(TARGET): $(OBJ_FILES) $(MAIN_OBJ_FILE)
 	$(CXX) $(CXXFLAGS) -o $@ $^
@@ -37,7 +39,10 @@ run: $(TARGET)
 
 # Test target
 test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+	./$(TEST_TARGET) --abortx 10000
+
+run_test:
+	./$(TEST_TARGET) --abortx 10000
 
 # Link the test object files to create the test executable
 $(TEST_TARGET): $(OBJ_FILES) $(TEST_OBJ_FILES)
