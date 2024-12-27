@@ -1,28 +1,34 @@
 #include "colors.h"
+#include <iostream>
+#include <cmath>
 
 uint8_t colorToGrayscale(const ColorRGB& color) {
-    /*
-        return the average of the three color components
-    */
-   return 0;
+    double grayValue = 0.299 * static_cast<double>(color.r) +
+                       0.587 * static_cast<double>(color.g) +
+                       0.114 * static_cast<double>(color.b);
+    return static_cast<uint8_t>(std::round(grayValue));
+   
 }
 
 ColorRGB readFromFileStream(std::fstream& stream) {
-    /*
-        * The color is stored as three bytes in the order R, G, B.
-        * We read the bytes from the stream and return the color as ColorRGB structure.
-    */
+    ColorRGB color;
+    stream.read(reinterpret_cast<char*>(&color.r), sizeof(uint8_t));
+    stream.read(reinterpret_cast<char*>(&color.g), sizeof(uint8_t));
+    stream.read(reinterpret_cast<char*>(&color.b), sizeof(uint8_t));
+
+    if (stream.fail()) {
+        std::cerr << "Ошибка при чтении цвета из потока.\n";
+        return ColorRGB{0, 0, 0};
+    }
+
+    return color;
+   
     return {};
 }
 
 int64_t colorDistanceSq(const ColorRGB& color1, const ColorRGB& color2) {
-    /*
-        * The distance between two colors is defined as the square of the Euclidean distance between them.
-        * The Euclidean distance between two points (x1, y1, z1) and (x2, y2, z2) is defined as
-        * sqrt((x1 - x2)^2 + (y1 - y2)^2 + (z1 - z2)^2).
-        * Since the square root is a monotonic function, we can compare the distances without taking the square root.
-        * The distance between two colors (r1, g1, b1) and (r2, g2, b2) is defined as
-        * (r1 - r2)^2 + (g1 - g2)^2 + (b1 - b2)^2.
-    */
-    return 0;
+    int64_t dr = static_cast<int64_t>(color1.r) - static_cast<int64_t>(color2.r);
+    int64_t dg = static_cast<int64_t>(color1.g) - static_cast<int64_t>(color2.g);
+    int64_t db = static_cast<int64_t>(color1.b) - static_cast<int64_t>(color2.b);
+    return dr * dr + dg * dg + db * db;
 }
